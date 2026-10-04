@@ -193,16 +193,39 @@ flowchart LR
 ### 5.3 CTS User Lifecycle
 
 ```mermaid
-stateDiagram-v2
-    [*] --> InScope: Source user assigned / matches scope
-    InScope --> Provisioned: CTS creates B2B user in target
-    Provisioned --> Updated: Source attributes change
-    Updated --> Provisioned: Next successful provisioning cycle
-    Provisioned --> DisabledTarget: Source account disabled
-    Provisioned --> SoftDeletedTarget: Source user deleted or out of scope
-    DisabledTarget --> Provisioned: Source re-enabled and still in scope
-    SoftDeletedTarget --> [*]: Recycle bin lifecycle / permanent deletion
+flowchart LR
+    subgraph S["Source Tenant Event"]
+        E1["User added to scope"]
+        E2["Attributes change"]
+        E3["Account disabled"]
+        E4["Account re-enabled<br/>still in scope"]
+        E5["User deleted"]
+        E6["Removed from scope<br/>Delete action ON"]
+        E7["Removed from scope<br/>Delete action OFF"]
+    end
+
+    subgraph T["Target Tenant Result"]
+        R1["B2B user created<br/>and auto-redeemed"]
+        R2["B2B user updated<br/>on next sync cycle"]
+        R3["Sign-in blocked<br/>object kept"]
+        R4["Sign-in restored"]
+        R5["Soft-deleted<br/>in recycle bin"]
+        R7["No change<br/>object remains"]
+    end
+
+    R6["Permanently deleted<br/>after recycle bin period"]
+
+    E1 --> R1
+    E2 --> R2
+    E3 --> R3
+    E4 --> R4
+    E5 --> R5
+    E6 --> R5
+    E7 --> R7
+    R5 --> R6
 ```
+
+**How to read it:** each event on the left happens in the source tenant. The box it points to is what CTS does to the matching B2B user in the target tenant on the next provisioning cycle.
 
 | Source event | Target B2B object result | Note |
 |---|---|---|
